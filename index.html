@@ -556,8 +556,8 @@
                         }, 2000);
                     $( "#map" ).focus();
                     });
-                    $( document ).on( "applicationExtended", function (e, eData) {
-                        configuration.complete(eData.xml);
+                    document.addEventListener("applicationExtended", (e,x) => {
+                        configuration.complete(e.detail);
                     });
                     configuration.getExtensions(xml);
                 }, // fin success config

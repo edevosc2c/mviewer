@@ -99,9 +99,13 @@ var configuration = (function () {
     };
 
     var _getExtensions = function (conf) {
+        const configLoadEvent = new CustomEvent("applicationExtended", { "detail": conf });
         //load javascript extensions and trigger applicationExtended when all is done
-        let extensionArray = XML.xml2json(conf).config.extensions.extension;
-        extensionArray = !_.isEmpty(extensionArray) && Array.isArray(extensionArray) ? extensionArray : [extensionArray]
+        let extensionArray = XML.xml2json(conf).config?.extensions?.extension || [];
+        if (!extensionArray.length) {
+            return document.dispatchEvent(configLoadEvent);
+        }
+        extensionArray = Array.isArray(extensionArray) ? extensionArray : [extensionArray]
 
         const jsExtensions = extensionArray.filter(extension => extension.type === 'javascript');
         const requests = jsExtensions.map(extension => {
@@ -120,10 +124,11 @@ var configuration = (function () {
                 if (data) new Component(d.id, d.src, d.data);
             });
             //Trigger when external resources are loaded
-            $(document).trigger("applicationExtended", { "xml": conf });
+            document.dispatchEvent(configLoadEvent);
         }).catch((err) => {
             // Trigger is needed with error
-            $(document).trigger("applicationExtended", { "xml": conf });
+            document.dispatchEvent(configLoadEvent);
+            // $(document).trigger("applicationExtended", { "xml": conf });
         });
 
         //load components
@@ -147,7 +152,7 @@ var configuration = (function () {
          * Les thématiques externes peuvent utiliser des ressources particulières (templates, customLayer, sld...)
          * si les URLs de ces ressources sont absolues et accessibles.
         */
-
+        console.log(conf);
         //Recherche des thématiques externes
         var extraConf = $(conf).find("theme").filter(function (idx, theme) {
             if ($(theme).attr("id") && $(theme).attr("url") && $(theme).attr("url").indexOf("http") > -1 ) {
