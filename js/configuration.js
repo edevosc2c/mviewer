@@ -100,23 +100,30 @@ var configuration = (function () {
 
     var _getExtensions = function (conf) {
         //load javascript extensions and trigger applicationExtended when all is done
-        const extensionArray = XML.xml2json(conf).config.extensions.extension;
+        let extensionArray = XML.xml2json(conf).config.extensions.extension;
+        extensionArray = !_.isEmpty(extensionArray) && Array.isArray(extensionArray) ? extensionArray : [extensionArray]
+
         const jsExtensions = extensionArray.filter(extension => extension.type === 'javascript');
         const requests = jsExtensions.map(extension => {
             return axios.get(mviewer.ajaxURL(extension.src, false), {
                 crossDomain: true
-            }).catch((error) => {
-                alert(`Error with extensions !`);
+            })
+            .catch((error) => {
+                alert(`${extension.id} extension can't be load correctly !`)
                 console.log(`Error with extension - Can't load file : ${extension.src}`);
+                return null
             });
-        })
-        Promise.all(requests).then(data => {
+        });
+        Promise.all(requests).then((data) => {
+            data = data.map((d, i) => ({ ...jsExtensions[i], ...d })).filter(d => d?.data);
+            data.forEach((d) => {
+                if (data) new Component(d.id, d.src, d.data);
+            });
             //Trigger when external resources are loaded
             $(document).trigger("applicationExtended", { "xml": conf });
         }).catch((err) => {
             // Trigger is needed with error
             $(document).trigger("applicationExtended", { "xml": conf });
-            console.log(err);
         });
 
         //load components

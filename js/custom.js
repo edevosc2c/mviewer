@@ -53,12 +53,13 @@ class AdvancedCustomControl {
   }
 }
 
-
 class Component {
-  constructor(id, path) {
+  constructor(id, path, data) {
     this.id = id;
-    this.path = path  + "/" + this.id + "/";
+    this.path = path + "/" + this.id + "/";
     this.config = {};
+    // for js file
+    this.lib = data;
     this.load();
   }
 
@@ -96,18 +97,22 @@ class Component {
       }
     }
 
-    const loadScript = function (src) {
-      const scriptPromise = new Promise((resolve, reject) => {
+    const loadScript = (src, lib) => {
+      return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         document.body.appendChild(script);
         script.type = 'text/javascript';
         script.onload = resolve;
         script.onerror = reject;
         script.async = true;
-        script.src = src;
+        if (src) {
+          script.src = src;
+        }
+        if (lib) {
+          script.appendChild(document.createTextNode(lib));
+        }
+        resolve();
       });
-      return scriptPromise;
-
     }
 
     const getHTML = function () {
@@ -174,10 +179,19 @@ class Component {
         } else {
           reject("error");
         }
-
       })
     }
 
+
+    // js lib file
+    if (this.lib) {
+      return loadScript(this.src, this.lib)
+        .then(target => {
+          dispatch().catch(e => console.log(e));
+          console.log(`${that.id} is successfully loaded`);
+        }).catch(() => console.log(`Error : ${that.id} is not loaded`));
+    }
+    // component
     getConfig(this.path) /* get config.json file */
     .then(json => setConfig(json)) /* store json body in config variable */
     .then(config => getScripts(config)) /* download all scripts from config.js array */
@@ -186,11 +200,11 @@ class Component {
     .then(html => render(html)).catch(e => console.log(e)) /* render html body in target element from config.target */
     .then(target => dispatch()).catch(e => console.log(e)) /* dispatch componentLoaded event */
     .then(event => { if (event) {
-      console.log(`${that.id} is successfully loaded`);
-    } else {
-      console.log(`Error : ${that.id} is not loaded`);
-    }
-  })
+        console.log(`${that.id} is successfully loaded`);
+      } else {
+        console.log(`Error : ${that.id} is not loaded`);
+      }
+    })
   }
 
 }
